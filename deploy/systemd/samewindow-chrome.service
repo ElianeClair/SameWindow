@@ -1,0 +1,20 @@
+[Unit]
+Description=SameWindow shared Chrome
+Requires=samewindow-xvfb.service
+After=samewindow-xvfb.service samewindow-openbox.service
+
+[Service]
+Type=simple
+User=samewindow
+Group=samewindow
+EnvironmentFile=-/etc/samewindow.env
+Environment=HOME=/var/lib/samewindow
+Environment=XDG_RUNTIME_DIR=/var/lib/samewindow/runtime
+ExecStart=/opt/samewindow/scripts/run-chrome.sh
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/samewindow

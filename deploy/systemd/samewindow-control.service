@@ -1,0 +1,20 @@
+[Unit]
+Description=SameWindow browser control API
+Requires=samewindow-chrome.service
+After=samewindow-chrome.service
+
+[Service]
+Type=simple
+User=samewindow
+Group=samewindow
+WorkingDirectory=/opt/samewindow
+EnvironmentFile=-/etc/samewindow.env
+Environment=SAMEWINDOW_CURSOR_STATE_FILE=/var/lib/samewindow/novnc-web/cursor-state.json
+ExecStart=/usr/bin/node /opt/samewindow/src/control-server.mjs
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/samewindow/novnc-web

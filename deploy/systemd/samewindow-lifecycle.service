@@ -1,0 +1,17 @@
+[Unit]
+Description=SameWindow lifecycle dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/samewindow
+EnvironmentFile=-/etc/samewindow.env
+ExecStart=/usr/bin/node /opt/samewindow/src/lifecycle-server.mjs
+Restart=on-failure
+RestartSec=2
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

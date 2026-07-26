@@ -1,0 +1,21 @@
+{
+  "name": "samewindow",
+  "version": "0.1.0",
+  "description": "A browser shared visibly between a person and an AI agent.",
+  "homepage": "https://github.com/Yinglianchun/SameWindow",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yinglianchun/SameWindow.git"
+  },
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/control-server.mjs && node --check src/lifecycle-server.mjs && node --check web/novnc/agent-cursor.js && node --check web/novnc/user-cursor.js && node --check web/novnc/watch-mode.js && node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.61.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=SameWindow virtual X display
+
+[Service]
+Type=simple
+User=samewindow
+Group=samewindow
+EnvironmentFile=-/etc/samewindow.env
+ExecStart=/usr/bin/Xvfb ${SAMEWINDOW_DISPLAY} -screen 0 ${SAMEWINDOW_SCREEN} -nolisten tcp -ac
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/samewindow

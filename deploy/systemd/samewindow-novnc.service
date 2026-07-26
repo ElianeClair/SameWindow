@@ -1,0 +1,17 @@
+[Unit]
+Description=SameWindow noVNC web viewer
+Requires=samewindow-x11vnc.service
+After=samewindow-x11vnc.service
+
+[Service]
+Type=simple
+User=samewindow
+Group=samewindow
+ExecStart=/usr/bin/websockify --web=/var/lib/samewindow/novnc-web 127.0.0.1:6080 127.0.0.1:5900
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/var/lib/samewindow/novnc-web

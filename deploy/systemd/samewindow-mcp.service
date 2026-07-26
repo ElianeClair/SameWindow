@@ -1,0 +1,22 @@
+[Unit]
+Description=SameWindow MCP server (loopback HTTP)
+After=network.target samewindow-lifecycle.service
+Requires=samewindow-lifecycle.service
+
+[Service]
+Type=simple
+User=samewindow
+Group=samewindow
+WorkingDirectory=/opt/samewindow
+EnvironmentFile=-/etc/samewindow.env
+ExecStart=/opt/samewindow/.venv/bin/python /opt/samewindow/src/mcp_server.py --transport streamable-http
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/samewindow
+
+[Install]
+WantedBy=multi-user.target

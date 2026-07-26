@@ -1,0 +1,17 @@
+[Unit]
+Description=SameWindow VNC bridge
+Requires=samewindow-xvfb.service
+After=samewindow-xvfb.service samewindow-chrome.service
+
+[Service]
+Type=simple
+User=samewindow
+Group=samewindow
+EnvironmentFile=-/etc/samewindow.env
+ExecStart=/usr/bin/x11vnc -display ${SAMEWINDOW_DISPLAY} -rfbport 5900 -localhost -forever -shared -nopw -noxdamage
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

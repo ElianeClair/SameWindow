@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SameWindow</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #080808;
+        color: #f4f4f1;
+      }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body { display: grid; grid-template-rows: 54px minmax(0, 1fr); background: #080808; }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 16px;
+        border-bottom: 1px solid #343434;
+        background: #0b0b0b;
+      }
+      h1 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: .02em; }
+      #status { margin-right: auto; color: #92928e; font-size: 12px; }
+      button {
+        min-width: 76px;
+        height: 32px;
+        border: 1px solid #666;
+        border-radius: 0;
+        background: #101010;
+        color: #f4f4f1;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover, button:focus-visible { border-color: #fff; outline: 0; }
+      button:disabled { opacity: .35; cursor: wait; }
+      #viewer { width: 100%; height: 100%; border: 0; background: #050505; }
+      #empty {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        color: #777;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>SameWindow</h1>
+      <span id="status">Checking the shared browser…</span>
+      <button id="start" type="button">Start</button>
+      <button id="stop" type="button">Stop</button>
+    </header>
+    <main>
+      <div id="empty">The browser is asleep.</div>
+      <iframe id="viewer" title="SameWindow shared browser" src="about:blank" hidden></iframe>
+    </main>
+    <script>
+      (() => {
+        const statusLabel = document.querySelector("#status");
+        const startButton = document.querySelector("#start");
+        const stopButton = document.querySelector("#stop");
+        const viewer = document.querySelector("#viewer");
+        const empty = document.querySelector("#empty");
+        let busy = false;
+        let viewerLoaded = false;
+
+        async function request(path, options = {}) {
+          const response = await fetch(path, {
+            cache: "no-store",
+            ...options,
+            headers: options.method === "POST"
+              ? { "Content-Type": "application/json", "X-SameWindow-Lifecycle": "1" }
+              : undefined,
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || `request failed: ${response.status}`);
+          return result;
+        }
+
+        function render(state) {
+          const running = state.phase === "running" && state.ready;
+          statusLabel.textContent = busy
+            ? "Working…"
+            : running
+              ? "Shared browser is ready"
+              : state.phase === "starting"
+                ? "Starting…"
+                : "Browser is asleep";
+          startButton.disabled = busy || running;
+          stopButton.disabled = busy || state.phase === "stopped";
+          viewer.hidden = !running;
+          empty.hidden = running;
+          if (running && !viewerLoaded) {
+            viewer.src = `${state.viewerUrl}?t=${Date.now()}`;
+            viewerLoaded = true;
+          }
+          if (!running && viewerLoaded) {
+            viewer.src = "about:blank";
+            viewerLoaded = false;
+          }
+        }
+
+        async function refresh() {
+          try {
+            render(await request("/api/status"));
+          } catch (error) {
+            statusLabel.textContent = error.message;
+          }
+        }
+
+        async function act(path) {
+          if (busy) return;
+          busy = true;
+          startButton.disabled = true;
+          stopButton.disabled = true;
+          try {
+            render(await request(path, { method: "POST", body: "{}" }));
+          } catch (error) {
+            statusLabel.textContent = error.message;
+          } finally {
+            busy = false;
+            await refresh();
+          }
+        }
+
+        startButton.addEventListener("click", () => act("/api/start"));
+        stopButton.addEventListener("click", () => act("/api/stop"));
+        refresh();
+        setInterval(refresh, 2500);
+      })();
+    </script>
+  </body>
+</html>
