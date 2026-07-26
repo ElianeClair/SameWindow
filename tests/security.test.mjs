@@ -10,9 +10,9 @@ test("control service keeps public-safe defaults", async () => {
   assert.match(source, /SAMEWINDOW_CONTROL_HOST \|\| "127\.0\.0\.1"/);
   assert.match(source, /SAMEWINDOW_ALLOW_SENSITIVE_AUTOMATION === "1"/);
   assert.match(source, /await assertPageSafe\(page, "snapshot"\)/);
-  assert.match(source, /await assertPageSafe\(page, "screenshot"\)/);
   assert.match(source, /await assertPageSafe\(page, "pointer inspection"\)/);
   assert.match(source, /: await findObservedPage\(\)/);
   assert.match(source, /ref from a fresh snapshot is required/);
   assert.doesNotMatch(source, /document\.cookie|localStorage|sessionStorage/);
+  assert.doesNotMatch(source, /\/browser\/screenshot|dataBase64/);
 });

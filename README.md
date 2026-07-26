@@ -14,8 +14,8 @@ client, personal assistant prompts, private APIs, or any accounts.
 ## What it includes
 
 - A visible Chrome desktop: Xvfb → Openbox → Chrome → x11vnc → noVNC
-- A Playwright/CDP control service with tab, snapshot, click, type, key, cursor,
-  and screenshot operations
+- A Playwright/CDP control service with tab, snapshot, click, type, key, and
+  cursor operations
 - A Python MCP façade for agent clients
 - A small start/stop dashboard so the heavy browser stack can sleep
 - Optional “Browse together” semantic events for deliberate clicks, dwell,
@@ -35,15 +35,10 @@ Internet-facing authentication layer: use SSH forwarding or another
 authenticated private transport and never expose ports `6080`–`6083` publicly.
 
 The agent cannot access cookies, browser storage, arbitrary JavaScript
-evaluation, or arbitrary CSS selectors through the public tools. Actions use
-temporary references from a fresh snapshot. Login, password, one-time-code,
-identity, checkout, and payment pages are blocked from snapshots, screenshots,
+evaluation, arbitrary CSS selectors, or screenshots through the public tools.
+Actions use temporary references from a fresh snapshot. Login, password,
+one-time-code, identity, checkout, and payment pages are blocked from snapshots
 and actions by default.
-
-Screenshots are PNG bytes returned once as an MCP image. Internally they cross
-the local JSON boundary as base64 because JSON cannot carry raw binary; the MCP
-server immediately decodes them. They are not written to disk, so there is
-nothing to delete after 24 hours.
 
 See [SECURITY.md](SECURITY.md) before deploying.
 
@@ -145,8 +140,8 @@ the SSH tunnel is part of the security boundary.
 6. Stop the browser only when the person is finished or resources should be
    released.
 
-If no `tab_ref` is supplied, snapshots and screenshots follow the actually
-focused/visible tab rather than a stale cached selection.
+If no `tab_ref` is supplied, snapshots follow the actually focused/visible tab
+rather than a stale cached selection.
 
 ## Development
 

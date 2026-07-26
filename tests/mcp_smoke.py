@@ -28,13 +28,14 @@ async def main() -> None:
     expected = {
         "shared_browser_lifecycle_status",
         "shared_browser_snapshot",
-        "shared_browser_screenshot",
         "shared_browser_click",
         "shared_browser_watch_set",
     }
     missing = expected - names
     if missing:
         raise SystemExit(f"MCP smoke test is missing tools: {sorted(missing)}")
+    if "shared_browser_screenshot" in names:
+        raise SystemExit("Public MCP must not expose an agent-only screenshot tool")
     print(f"MCP handshake passed with {len(names)} tools.")
 
 

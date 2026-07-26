@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import os
 import urllib.error
 import urllib.request
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP, Image
+from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 
@@ -185,26 +184,6 @@ def shared_browser_snapshot(
             "includePointerExtras": include_pointer_extras,
         },
     )
-
-
-@mcp.tool(annotations=READ_ONLY)
-def shared_browser_screenshot(tab_ref: str = "", full_page: bool = False) -> Image:
-    """Return a PNG of the visible foreground or referenced page without storing it."""
-    result = _control(
-        "/browser/screenshot",
-        {"tabRef": tab_ref, "fullPage": full_page},
-    )
-    screenshot = result.get("screenshot")
-    if not isinstance(screenshot, dict) or screenshot.get("format") != "png":
-        raise RuntimeError("SameWindow returned an invalid screenshot")
-    encoded = screenshot.get("dataBase64")
-    if not isinstance(encoded, str) or not encoded:
-        raise RuntimeError("SameWindow returned an empty screenshot")
-    try:
-        image = base64.b64decode(encoded, validate=True)
-    except ValueError as error:
-        raise RuntimeError("SameWindow returned malformed screenshot data") from error
-    return Image(data=image, format="png")
 
 
 @mcp.tool(annotations=WRITE_ACTION)

@@ -16,9 +16,9 @@ to its control plane as access to the browser profile.
 - Remember that a persistent Chrome profile contains authenticated sessions.
   Protect `/var/lib/samewindow/chrome-profile` and the host itself.
 
-Screenshots are encoded in memory only long enough to be returned as an MCP
-image. SameWindow does not write screenshot files. Browse-together events are
-kept in a bounded in-memory queue and disappear when the control service stops.
+The public control and MCP surfaces do not expose screenshots. Browse-together
+events are kept in a bounded in-memory queue and disappear when the control
+service stops.
 
 ## Reporting a vulnerability
 

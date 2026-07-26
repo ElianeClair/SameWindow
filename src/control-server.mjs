@@ -15,7 +15,6 @@ const cursorNearCooldownMs = 10 * 60 * 1000;
 const pageTextCaptureDelayMs = 30 * 1000;
 const pageTextRetryDelayMs = 10 * 1000;
 const pageTextMaxChars = 8000;
-const screenshotMaxBytes = 8 * 1024 * 1024;
 const allowedOrigins = new Set(
   (process.env.SAMEWINDOW_ALLOWED_ORIGINS
     || "http://127.0.0.1:6080,http://localhost:6080")
@@ -843,45 +842,6 @@ async function snapshotPage(value) {
   };
 }
 
-async function screenshotPage(value) {
-  const startedAt = performance.now();
-  const tabRef = cleanString(value.tabRef, 50);
-  const page = tabRef
-    ? await findPage(tabRef, false)
-    : await findObservedPage();
-  await assertPageSafe(page, "screenshot");
-  const fullPage = value.fullPage === true;
-  const image = await page.screenshot({
-    type: "png",
-    fullPage,
-    animations: "disabled",
-    caret: "hide",
-    scale: "css",
-    timeout: 15000,
-  });
-  if (image.length > screenshotMaxBytes) {
-    throw new Error(
-      `screenshot is too large (${image.length} bytes); capture the current viewport instead`,
-    );
-  }
-  const viewport = await page.evaluate(() => ({
-    width: window.innerWidth,
-    height: window.innerHeight,
-    deviceScaleFactor: window.devicePixelRatio,
-  }));
-  return {
-    tabRef: getTabRef(page),
-    title: cleanString(await page.title(), 200),
-    url: cleanString(page.url(), 2048),
-    format: "png",
-    fullPage,
-    viewport,
-    sizeBytes: image.length,
-    dataBase64: image.toString("base64"),
-    timingMs: Math.round((performance.now() - startedAt) * 10) / 10,
-  };
-}
-
 async function getTarget(value) {
   const page = await findPage(cleanString(value.tabRef, 50), false);
   const ref = cleanString(value.ref, 30);
@@ -1152,10 +1112,6 @@ async function routeRequest(request, response, origin) {
   }
   if (request.method === "POST" && requestUrl.pathname === "/browser/snapshot") {
     sendJson(response, 200, { ok: true, snapshot: await snapshotPage(await readJsonBody(request)) }, origin);
-    return;
-  }
-  if (request.method === "POST" && requestUrl.pathname === "/browser/screenshot") {
-    sendJson(response, 200, { ok: true, screenshot: await screenshotPage(await readJsonBody(request)) }, origin);
     return;
   }
   if (request.method === "POST" && requestUrl.pathname === "/browser/click") {
