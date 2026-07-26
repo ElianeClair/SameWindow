@@ -15,11 +15,11 @@ client, personal assistant prompts, private APIs, or any accounts.
 
 - A visible Chrome desktop: Xvfb → Openbox → Chrome → x11vnc → noVNC
 - A Playwright/CDP control service with tab, snapshot, click, type, key, and
-  cursor operations
+  automatic visible cursor feedback
 - A Python MCP façade for agent clients
 - A small start/stop dashboard so the heavy browser stack can sleep
-- Optional “Browse together” semantic events for deliberate clicks, dwell,
-  stable page text, and near-pointer moments
+- Optional “Browse together” semantic events for host integrations, covering
+  deliberate clicks, dwell, stable page text, and near-pointer moments
 - A persistent, dedicated Chrome profile
 
 ```text
@@ -129,6 +129,37 @@ ssh -N -L 6083:127.0.0.1:6083 your-user@your-server
 
 Its endpoint is `http://127.0.0.1:6083/mcp`. It has no application-level auth;
 the SSH tunnel is part of the security boundary.
+
+## Deliberately small MCP surface
+
+SameWindow exposes 12 core MCP tools by default. It intentionally does not
+turn every internal control endpoint into an agent tool:
+
+| Tool | Default | Why |
+| --- | --- | --- |
+| `shared_browser_screenshot` | Removed | The person already sees the window, while agents should use compact semantic snapshots. Sending an image into a particular chat is a host/client responsibility, not a portable browser tool. |
+| `shared_browser_cursor_move` | Removed | Ref-based click and type actions already move the visible agent cursor automatically. A separate cosmetic movement call adds noise. |
+| `shared_browser_user_cursor` | Removed | Raw pointer polling is noisy, quickly becomes stale, and duplicates the deliberate semantic-event channel. |
+| `shared_browser_watch_set` | Removed | Browse-together observation is consent-controlled by the person from the viewer; the agent should not enable it. |
+| `shared_browser_watch_status` | Opt-in | Useful only for clients that actively consume browse-together events. |
+| `shared_browser_events` | Opt-in | Polling is valuable for an active agent loop, but unnecessary overhead for ordinary browser control. |
+
+To expose the two read-only browse-together polling tools, set:
+
+```bash
+SAMEWINDOW_ENABLE_BROWSE_TOGETHER_MCP=1
+```
+
+For the installed HTTP MCP service, add it to `/etc/samewindow.env` and restart
+`samewindow-mcp.service`. For SSH stdio, pass the variable through the remote
+command or configure it in the remote process environment.
+
+The person must still turn on **Browse together** in the noVNC viewer. An MCP
+client can then call `shared_browser_events` repeatedly during an active agent
+run. This does not make ChatGPT or another client permanently proactive:
+after the response/run ends, continued observation requires the host
+application to schedule another turn. Host integrations can also consume the
+loopback control API directly without expanding the model-facing tool list.
 
 ## Typical agent flow
 

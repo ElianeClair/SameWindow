@@ -17,6 +17,10 @@ CONTROL_URL = os.getenv("SAMEWINDOW_CONTROL_URL", "http://127.0.0.1:6081").rstri
 LIFECYCLE_URL = os.getenv("SAMEWINDOW_LIFECYCLE_URL", "http://127.0.0.1:6082").rstrip("/")
 MCP_HOST = os.getenv("SAMEWINDOW_MCP_HOST", "127.0.0.1")
 MCP_PORT = int(os.getenv("SAMEWINDOW_MCP_PORT", "6083"))
+ENABLE_BROWSE_TOGETHER_MCP = os.getenv(
+    "SAMEWINDOW_ENABLE_BROWSE_TOGETHER_MCP",
+    "0",
+).strip().lower() in {"1", "true", "yes", "on"}
 
 READ_ONLY = ToolAnnotations(
     readOnlyHint=True,
@@ -229,49 +233,18 @@ def shared_browser_press(tab_ref: str, key: str, wait_after_ms: int = 0) -> dict
     )
 
 
-@mcp.tool(annotations=STATE_ACTION)
-def shared_browser_cursor_move(
-    x: float,
-    y: float,
-    click: bool = False,
-    duration_ms: int = 220,
-    animate: bool = True,
-) -> dict[str, Any]:
-    """Move the agent cursor to normalized shared-screen coordinates."""
-    return _control(
-        "/browser/cursor/move",
-        {
-            "x": x,
-            "y": y,
-            "click": click,
-            "durationMs": duration_ms,
-            "animate": animate,
-        },
-    )
+if ENABLE_BROWSE_TOGETHER_MCP:
+
+    @mcp.tool(annotations=READ_ONLY)
+    def shared_browser_watch_status() -> dict[str, Any]:
+        """Return whether the person enabled browse-together observation in the viewer."""
+        return _control("/browser/watch")
 
 
-@mcp.tool(annotations=READ_ONLY)
-def shared_browser_user_cursor() -> dict[str, Any]:
-    """Return the latest user pointer position and the visible target beneath it."""
-    return _control("/browser/user-cursor")
-
-
-@mcp.tool(annotations=READ_ONLY)
-def shared_browser_watch_status() -> dict[str, Any]:
-    """Return whether browse-together semantic observation is enabled."""
-    return _control("/browser/watch")
-
-
-@mcp.tool(annotations=STATE_ACTION)
-def shared_browser_watch_set(enabled: bool) -> dict[str, Any]:
-    """Enable or disable deliberate shared-browser semantic events."""
-    return _control("/browser/watch", {"enabled": enabled})
-
-
-@mcp.tool(annotations=READ_ONLY)
-def shared_browser_events(after: int = 0, limit: int = 20) -> dict[str, Any]:
-    """Read queued semantic events after a sequence number."""
-    return _control(f"/browser/events?after={max(0, after)}&limit={max(1, min(50, limit))}")
+    @mcp.tool(annotations=READ_ONLY)
+    def shared_browser_events(after: int = 0, limit: int = 20) -> dict[str, Any]:
+        """Read queued opt-in semantic events after a sequence number."""
+        return _control(f"/browser/events?after={max(0, after)}&limit={max(1, min(50, limit))}")
 
 
 def main() -> None:
