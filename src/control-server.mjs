@@ -12,6 +12,7 @@ const cursorStateFile = process.env.SAMEWINDOW_CURSOR_STATE_FILE
   || "/var/lib/samewindow/novnc-web/cursor-state.json";
 const allowSensitiveAutomation = process.env.SAMEWINDOW_ALLOW_SENSITIVE_AUTOMATION === "1";
 const cursorNearCooldownMs = 10 * 60 * 1000;
+const pageChangeDwellMs = 5 * 1000;
 const pageTextCaptureDelayMs = 30 * 1000;
 const pageTextRetryDelayMs = 10 * 1000;
 const pageTextMaxChars = 8000;
@@ -507,7 +508,7 @@ async function observeWatchState() {
         pageTextLastAttemptAt = 0;
       } else if (pageChangeCandidate?.fingerprint === fingerprint) {
         pageChangeCandidate.page = page;
-        if (now - pageChangeCandidate.since >= 10000) {
+        if (now - pageChangeCandidate.since >= pageChangeDwellMs) {
           if (!pageChangeCandidate.followsClick) {
             const safePage = await pageObservation(true);
             const safeFingerprint = `${safePage.tabRef}\n${safePage.url}`;
