@@ -161,6 +161,12 @@ after the response/run ends, continued observation requires the host
 application to schedule another turn. Host integrations can also consume the
 loopback control API directly without expanding the model-facing tool list.
 
+Browse-together emits a `page_change` preview with the title and main page
+content after five stable seconds. At fifteen stable seconds, a deduplicated
+`page_text` event adds fuller visible text, including comments when the page
+renders them. Sensitive forms and authentication or payment pages remain
+excluded.
+
 ## Typical agent flow
 
 1. Check `shared_browser_lifecycle_status`; start it if needed.

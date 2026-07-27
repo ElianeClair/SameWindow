@@ -13,6 +13,9 @@ test("control service keeps public-safe defaults", async () => {
   assert.match(source, /await assertPageSafe\(page, "pointer inspection"\)/);
   assert.match(source, /: await findObservedPage\(\)/);
   assert.match(source, /ref from a fresh snapshot is required/);
+  assert.match(source, /pageChangeDwellMs = 5 \* 1000/);
+  assert.match(source, /pageTextCaptureDelayMs = 15 \* 1000/);
+  assert.match(source, /event\.text = previewText/);
   assert.doesNotMatch(source, /document\.cookie|localStorage|sessionStorage/);
   assert.doesNotMatch(source, /\/browser\/screenshot|dataBase64/);
 });

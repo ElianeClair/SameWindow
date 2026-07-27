@@ -13,8 +13,9 @@ const cursorStateFile = process.env.SAMEWINDOW_CURSOR_STATE_FILE
 const allowSensitiveAutomation = process.env.SAMEWINDOW_ALLOW_SENSITIVE_AUTOMATION === "1";
 const cursorNearCooldownMs = 10 * 60 * 1000;
 const pageChangeDwellMs = 5 * 1000;
-const pageTextCaptureDelayMs = 30 * 1000;
+const pageTextCaptureDelayMs = 15 * 1000;
 const pageTextRetryDelayMs = 10 * 1000;
+const pagePreviewMaxChars = 3000;
 const pageTextMaxChars = 8000;
 const allowedOrigins = new Set(
   (process.env.SAMEWINDOW_ALLOWED_ORIGINS
@@ -273,7 +274,7 @@ async function assertPageSafe(page, operation) {
   }
 }
 
-async function extractVisiblePageText(expectedFingerprint) {
+async function extractVisiblePageText(expectedFingerprint, options = {}) {
   const page = await findObservedPage();
   const observation = {
     tabRef: getTabRef(page),
@@ -286,7 +287,9 @@ async function extractVisiblePageText(expectedFingerprint) {
   const reason = sensitivePageReason(observation);
   if (reason) return { skipped: true, reason, fingerprint };
 
-  const extracted = await page.evaluate(({ maxChars }) => {
+  const maxChars = Number(options.maxChars) > 0 ? Number(options.maxChars) : pageTextMaxChars;
+  const contentOnly = options.contentOnly === true;
+  const extracted = await page.evaluate(({ maxChars, contentOnly }) => {
     const renderedCache = new WeakMap();
     const isRendered = (element) => {
       if (!(element instanceof Element)) return false;
@@ -313,14 +316,36 @@ async function extractVisiblePageText(expectedFingerprint) {
       return { skipped: true, reason: "sensitive_form" };
     }
 
-    const roots = [...document.querySelectorAll("article, main, [role='main']")].filter(isRendered);
+    const compact = (raw, limit = maxChars) => String(raw || "").replace(/\s+/g, " ").trim().slice(0, limit);
+    if (contentOnly) {
+      const noteId = location.pathname.split("/").filter(Boolean).at(-1) || "";
+      const note = globalThis.__INITIAL_STATE__?.note?.noteDetailMap?.[noteId]?.note || {};
+      const structuredText = compact(note.desc, maxChars);
+      if (structuredText) {
+        return {
+          text: structuredText,
+          source: "page-state",
+          truncated: String(note.desc || "").trim().length > maxChars,
+        };
+      }
+    }
+
+    const rootSelector = contentOnly
+      ? "article, [class*='note-content' i], [class*='post-content' i], main, [role='main']"
+      : "article, main, [role='main']";
+    const roots = [...document.querySelectorAll(rootSelector)].filter(isRendered);
     const root = roots.reduce((best, candidate) => {
       const length = String(candidate.innerText || "").trim().length;
       return length > best.length ? { element: candidate, length } : best;
     }, { element: null, length: 0 }).element || document.body;
     if (!root) return { text: "", source: "none", truncated: false };
 
-    const skipSelector = "script, style, noscript, svg, canvas, input, textarea, select, option, [hidden], [aria-hidden='true']";
+    const skipSelector = [
+      "script, style, noscript, svg, canvas, input, textarea, select, option, [hidden], [aria-hidden='true']",
+      contentOnly
+        ? "nav, aside, footer, [class*='comment' i], [id*='comment' i], [data-testid*='comment' i], [aria-label*='comment' i], [aria-label*='评论' i]"
+        : "",
+    ].filter(Boolean).join(",");
     const blockSelector = "h1, h2, h3, h4, h5, h6, p, li, dt, dd, blockquote, pre, figcaption, caption, th, td, article, section, div";
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const lines = [];
@@ -360,7 +385,7 @@ async function extractVisiblePageText(expectedFingerprint) {
       source,
       truncated: fullText.length > maxChars || visited >= 30000,
     };
-  }, { maxChars: pageTextMaxChars });
+  }, { maxChars, contentOnly });
 
   const endingFingerprint = `${getTabRef(page)}\n${cleanString(page.url(), 2048)}`;
   if (endingFingerprint !== expectedFingerprint) return { stale: true };
@@ -509,17 +534,29 @@ async function observeWatchState() {
       } else if (pageChangeCandidate?.fingerprint === fingerprint) {
         pageChangeCandidate.page = page;
         if (now - pageChangeCandidate.since >= pageChangeDwellMs) {
-          if (!pageChangeCandidate.followsClick) {
-            const safePage = await pageObservation(true);
-            const safeFingerprint = `${safePage.tabRef}\n${safePage.url}`;
-            if (safeFingerprint === pageChangeCandidate.fingerprint) {
-              emitSemanticEvent("page_change", {
-                ...safePage,
-                dwellMs: now - pageChangeCandidate.since,
-              });
-            }
-          }
+          const candidate = pageChangeCandidate;
           pageChangeCandidate = null;
+          const safePage = await pageObservation(true);
+          const safeFingerprint = `${safePage.tabRef}\n${safePage.url}`;
+          if (safeFingerprint === candidate.fingerprint) {
+            const preview = await extractVisiblePageText(candidate.fingerprint, {
+              contentOnly: true,
+              maxChars: pagePreviewMaxChars,
+            }).catch(() => null);
+            const previewText = String(preview?.text || "").trim();
+            const event = {
+              ...safePage,
+              dwellMs: now - candidate.since,
+              followsClick: candidate.followsClick,
+            };
+            if (previewText) {
+              event.text = previewText;
+              event.textChars = previewText.length;
+              event.truncated = preview?.truncated === true;
+              event.source = preview?.source || "content";
+            }
+            emitSemanticEvent("page_change", event);
+          }
         }
       }
       lastPageFingerprint = fingerprint;
