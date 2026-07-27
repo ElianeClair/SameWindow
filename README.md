@@ -2,6 +2,8 @@
 
 **One browser. Two sets of hands.**
 
+[中文介绍：不是让 AI 替你上网，是把网页放到你们之间](README.zh-CN.md)
+
 SameWindow runs a persistent Chrome on a Linux host and lets a person and an AI
 agent use that exact browser together. The person sees and controls it through
 noVNC; the agent reads semantic snapshots and acts through small MCP tools.
