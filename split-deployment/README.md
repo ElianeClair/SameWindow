@@ -71,14 +71,28 @@ Everything else in the upstream MCP setup is unchanged. For autostart of the
 tunnel on macOS see `launchd.example.plist`; on Linux use autossh or a systemd
 user unit.
 
-## Privacy exit (optional)
+## Privacy exit (optional, recommended)
 
-With the browser at your home, websites would see your home IP — in the
-original layout they saw the server's. To keep that property, `tunnel.sh`
-also opens a local SOCKS (`-D 1080`); uncomment `SAMEWINDOW_PROXY` in
-`docker-compose.yml` and page traffic egresses from your server again.
-DNS is forced through the proxy (bare socks5 leaks it) and WebRTC is barred
-from bypassing it. The screen never touches the proxy — it stays local.
+Moving the browser home changes who sees your IP: in the original layout
+websites saw the *server's* IP; with a bare local browser they would see your
+*home* IP. To keep the original property, `tunnel.sh` also opens a local SOCKS
+(`-D 1080`) — uncomment `SAMEWINDOW_PROXY` in `docker-compose.yml` and page
+traffic egresses from your server again. If your home IP matters to you,
+treat this as part of the standard setup, not an extra.
+
+The exposure map, so you can audit rather than trust:
+
+| Who could see an IP        | Proxy ON (recommended)              | Proxy OFF                    |
+| -------------------------- | ----------------------------------- | ---------------------------- |
+| Websites you visit         | server IP                           | **home IP**                  |
+| DNS resolvers              | via server (forced through proxy)   | **your local network's DNS** |
+| WebRTC / STUN              | barred from bypassing (both modes)  | barred from bypassing        |
+| Your own server            | home IP (it's your machine)         | same                         |
+| Your ISP                   | "connects to own server", encrypted | sees domains you browse      |
+
+Verify with your own eyes: open `ipify.org` inside the shared browser — it
+must print the server's IP, not your home IP. The screen never touches the
+proxy — frames stay on localhost either way.
 
 Note: with the proxy enabled, pages load only while the tunnel is up.
 
