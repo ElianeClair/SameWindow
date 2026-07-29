@@ -4,6 +4,16 @@
 
 [中文介绍：不是让 AI 替你上网，是把网页放到你们之间](README.zh-CN.md)
 
+> **About this fork** — it adds one directory, [`split-deployment/`](split-deployment/):
+> run the browser half on the machine next to you, keep the agent on your remote
+> server, and stitch the two with an SSH reverse tunnel. Made for everyone whose
+> VPS is 300 ms away and whose shared window turned into a slideshow.
+> **Privacy-first**: an optional SOCKS exit keeps websites seeing your server's
+> IP instead of your home IP, with DNS forced through the proxy and WebRTC
+> barred from leaking around it. Everything else is unchanged from the original
+> by 小雨 × Haven — please star and share the
+> [official repository](https://github.com/Yinglianchun/SameWindow).
+
 SameWindow runs a persistent Chrome on a Linux host and lets a person and an AI
 agent use that exact browser together. The person sees and controls it through
 noVNC; the agent reads semantic snapshots and acts through small MCP tools.

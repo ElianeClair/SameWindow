@@ -1,0 +1,85 @@
+# SameWindow 分体部署
+
+[English](README.md)
+
+把 SameWindow 的**浏览器半边**搬到你手边的机器上跑，**agent 半边**留在远端服务器——一条 SSH 反向隧道把两半缝起来。
+
+这个目录怀着感谢，搭在小雨 × Haven 的 [SameWindow](https://github.com/Yinglianchun/SameWindow) 之上——共享的窗口本身、语义快照、在同一页面上相遇的两只光标，都是他们的作品。这里改变的只是：窗口住在哪。
+
+## 为什么
+
+SameWindow 默认全套跑在 VPS 上，人远程看画面。服务器离你近时这很完美；离你远时就塌了：VNC 传的是**画面帧**，每一帧都要在线路上跑一个来回——RTT 300 毫秒的线上，共享桌面恰好在你最想一起逛的时刻变成幻灯片。
+
+解法是看清两半的需求相反：
+
+- **画面**是重流量，该住在**人身边**——localhost、零延迟、晚高峰免疫；
+- **agent 的指令**是几百字节的 CDP 调用，不在乎 300 毫秒——它可以跨洋。
+
+```
+你手边的机器 (笔记本/家里主机)                远端服务器
+┌────────────────────────────────┐            ┌──────────────────────────┐
+│ docker: Xvfb → Chromium(CDP)   │  ssh -R    │ agent (MCP 客户端)        │
+│   x11vnc → noVNC :6080 ────────┼── 隧道 ────┤   SAMEWINDOW_CONTROL_URL │
+│   control server :6081 ────────┼─→ :16081   │   = http://127.0.0.1:16081│
+└──────────────┬─────────────────┘            └──────────────────────────┘
+               │ localhost (零延迟)
+        你的浏览器: http://127.0.0.1:6080/samewindow.html
+```
+
+你喜欢的一切都在分体后幸存：双光标、点击涟漪、"一起逛"开关、敏感页守卫。
+
+## 快速开始
+
+前提：Docker（macOS 用 Docker Desktop 或 OrbStack——Apple Silicon 可用，镜像用的是 Debian 原生 arm64 的 Chromium），以及到你服务器的 SSH 密钥。
+
+```bash
+git clone https://github.com/ElianeClair/SameWindow.git
+cd SameWindow/split-deployment
+docker compose up -d --build          # 首次构建需要几分钟
+```
+
+打开 <http://127.0.0.1:6080/samewindow.html> ——共享桌面，以你屏幕自己的帧率运行。
+
+然后把 control API 递给你的服务器：
+
+```bash
+# 先编辑 tunnel.sh 里的 SERVER= 和 PORT=
+chmod +x tunnel.sh && ./tunnel.sh     # 沉默即成功；保持它运行
+```
+
+服务器上，让 agent 指向隧道而不是本机实例：
+
+```bash
+SAMEWINDOW_CONTROL_URL=http://127.0.0.1:16081  # mcp_server.py 的环境变量
+```
+
+上游 MCP 的其余配置全部不变。隧道的 macOS 开机自启见 `launchd.example.plist`；Linux 用 autossh 或 systemd user unit。
+
+## 隐私出口（可选）
+
+浏览器搬回家后，网站会看到你家的出口 IP——而原布局里它们看到的是服务器的。想保住这个性质：`tunnel.sh` 顺带开了一条本地 SOCKS（`-D 1080`），把 `docker-compose.yml` 里的 `SAMEWINDOW_PROXY` 取消注释，网页流量就重新从你的服务器出去。DNS 已强制走代理（裸 socks5 会泄漏它），WebRTC 被禁止绕行。画面永远不经代理——它是纯本地的。
+
+注意：代理开启时，隧道没在跑网页就打不开。
+
+## 加固
+
+隧道钥匙只需要转发权。在服务器的 `~/.ssh/authorized_keys` 里给它上限制：
+
+```
+restrict,port-forwarding,permitlisten="16081" ssh-ed25519 AAAA... you@machine
+```
+
+这样笔记本被偷，这把钥匙也开不了 shell。两台机器上所有容器端口都只绑 127.0.0.1，没有任何东西面向公网。
+
+## 疑难杂症
+
+- **Chromium 反复报 "profile in use by another computer"** ——非干净关机留下的残锁。容器启动时会自动清掉；其他场景撞见：删掉 profile 目录里的 `Singleton*`。
+- **桌面正常但网页打不开**——代理开着而隧道没在跑。启动 `tunnel.sh`（或注释掉 `SAMEWINDOW_PROXY`）。
+- **合盖=桌面睡觉**——隧道断开、醒来自动重连；期间 agent 的探测会温和地失败。这是有意的设计。
+- **验证面具**：在共享浏览器里打开 `ipify.org` ——它应该显示你服务器的 IP，而不是你家的。
+
+## 致谢与许可
+
+- SameWindow —— 小雨 × Haven（[官方仓库](https://github.com/Yinglianchun/SameWindow)）。向别人分享原项目时，请直接发官方仓库的链接。
+- Split deployment & docs: Fable 5
+- 许可：与上游一致 —— [SameWindow Noncommercial Share-Alike License 1.0](../LICENSE)。
