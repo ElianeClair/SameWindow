@@ -82,13 +82,28 @@ treat this as part of the standard setup, not an extra.
 
 The exposure map, so you can audit rather than trust:
 
-| Who could see an IP        | Proxy ON (recommended)              | Proxy OFF                    |
-| -------------------------- | ----------------------------------- | ---------------------------- |
-| Websites you visit         | server IP                           | **home IP**                  |
-| DNS resolvers              | via server (forced through proxy)   | **your local network's DNS** |
-| WebRTC / STUN              | barred from bypassing (both modes)  | barred from bypassing        |
-| Your own server            | home IP (it's your machine)         | same                         |
-| Your ISP                   | "connects to own server", encrypted | sees domains you browse      |
+| Who could see an IP                     | Proxy ON (recommended)              | Proxy OFF                    |
+| --------------------------------------- | ----------------------------------- | ---------------------------- |
+| **Your AI provider (Anthropic/OpenAI…)**| **server IP — agent never moved**   | **server IP — agent never moved** |
+| Websites you visit                      | server IP                           | **home IP**                  |
+| DNS resolvers                           | via server (forced through proxy)   | **your local network's DNS** |
+| WebRTC / STUN                           | barred from bypassing (both modes)  | barred from bypassing        |
+| Your own server                         | home IP (it's your machine)         | same                         |
+| Your ISP                                | "connects to own server", encrypted | sees domains you browse      |
+
+### Your AI provider never sees your home IP
+
+Worth its own heading, because for many of us this is the IP that actually
+matters. The agent half never moves in this deployment: every call to your
+LLM provider (Anthropic, OpenAI, …) still originates from your **server**,
+exactly as before the split — in *both* proxy modes. Your home IP cannot
+enter the AI-side traffic, because the agent simply isn't on this machine.
+
+This is also a concrete reason to prefer splitting over moving the whole
+stack home: run the agent locally and your provider suddenly sees your local
+network instead — which matters a great deal if your provider is
+region-sensitive about accounts. The split keeps the browser next to you and
+the account exactly where it was.
 
 Verify with your own eyes: open `ipify.org` inside the shared browser — it
 must print the server's IP, not your home IP. The screen never touches the

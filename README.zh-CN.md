@@ -2,7 +2,7 @@
 
 [English / Installation Guide](README.md)
 
-> **关于这个 fork** —— 只新增一个目录：[`split-deployment/`](split-deployment/)（分体部署）。浏览器半边跑在你手边的机器上，agent 留在远端服务器，一条 SSH 反向隧道缝合两半——献给所有 VPS 远在三百毫秒之外、共享窗口卡成幻灯片的人。**隐私优先**：可选的 SOCKS 出口让网站始终只看到你服务器的 IP（你家 IP 对网站隐身），DNS 强制走代理解析、WebRTC 被禁止绕行泄漏。其余一切与小雨 × Haven 的原作完全一致——请为[官方仓库](https://github.com/Yinglianchun/SameWindow)点星，向别人分享时请指向那里。
+> **关于这个 fork** —— 只新增一个目录：[`split-deployment/`](split-deployment/)（分体部署）。浏览器半边跑在你手边的机器上，agent 留在远端服务器，一条 SSH 反向隧道缝合两半——献给所有 VPS 远在三百毫秒之外、共享窗口卡成幻灯片的人。**隐私优先**：agent 从未离开服务器——**你的 AI 服务商看到的永远是服务器的 IP，绝不是你家的网络**；可选的 SOCKS 出口让网站也只看到服务器 IP（你家 IP 对网站隐身），DNS 强制走代理解析、WebRTC 被禁止绕行泄漏。其余一切与小雨 × Haven 的原作完全一致——请为[官方仓库](https://github.com/Yinglianchun/SameWindow)点星，向别人分享时请指向那里。
 
 我和小雨想做的，一开始并不是什么“更强的浏览器自动化”。
 
